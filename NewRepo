@@ -1,0 +1,66 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import time
+import warnings
+import joblib
+
+warnings.filterwarnings(action="ignore")
+
+# Load the dataset
+data = pd.read_csv('BrainTumorData.csv', index_col=False)
+
+# Data preprocessing and feature engineering
+data['diagnosis'] = data['diagnosis'].apply(lambda x: 1 if x == 'M' else 0)
+data = data.set_index('id')
+# Separate features and target variable
+Y = data['diagnosis'].values
+X = data.drop('diagnosis', axis=1).values
+
+# Split the dataset into training and testing sets
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random_state=21)
+
+# Train the model
+model = SVC()
+scaler = StandardScaler().fit(X_train)
+X_train_scaled = scaler.transform(X_train)
+model.fit(X_train_scaled, Y_train)
+
+# Save the trained model
+filename = "finalized_BrainTumor_model.sav"
+joblib.dump(model, filename)
+
+# Function to take user input and make predictions
+def predict_tumor():
+    print("Enter the values for the following features:")
+    feature_names = data.drop('diagnosis', axis=1).columns
+    user_input = []
+    for feature in feature_names:
+        value = float(input(f"Enter {feature}: "))
+        user_input.append(value)
+    
+    # Create a DataFrame with the user input
+    user_input_df = pd.DataFrame([user_input], columns=feature_names)
+    
+    # Standardize the user input using the previously fitted scaler
+    user_input_scaled = scaler.transform(user_input_df)
+
+    # Make predictions
+    prediction = model.predict(user_input_scaled)
+
+    # Display the prediction
+    if prediction[0] == 1:
+        print("The model predicts that the person may have a brain tumor.")
+    else:
+        print("The model predicts that the person may not have a brain tumor.")
+
+# Call the prediction function
+predict_tumor()
